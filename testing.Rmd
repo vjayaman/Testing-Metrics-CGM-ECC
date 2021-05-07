@@ -144,50 +144,56 @@ source("scripts/ECC/ECC-sep_singletons.R")
 source("dist_sections.R")
 
 checkColumns <- function(x, y, tol, it) {
+  print(paste0("Iteration ", it, ": "))
+  
   first_col <- identical(pull(x, 1), pull(y, 1))
   second_col <- identical(pull(x, 2), pull(y, 2))
 
   a <- pull(x, 3)
   b <- pull(y, 3)
   third_col <- all(abs((a-b)) < tol)
+  
+  # saveRDS(x, paste0("test_results/it", it, "-actual.Rds"))
+  # saveRDS(y, paste0("test_results/it", it, "-test.Rds"))
+    
   if (all(first_col, second_col, third_col)) {
-    print(paste0("Test results and original results are same, within tolerance of ", tol))
+    print(paste0("Test results and original results are the same, within a tolerance of ", tol))
   }else {
     print(paste0("Results do not match for iteration ", it))
-    saveRDS(x, paste0("test_negs/iteration", it, "-actual.Rds"))
-    saveRDS(x, paste0("test_negs/iteration", it, "-test.Rds"))
   }
 }
 ```
 
-
 ```{r}
+raw_strains <- read_tsv(params$strains) %>% 
+    mutate(Date     = as.Date(paste(Year, Month, Day, sep = "-")), 
+           Location = paste(Country, Province, City, sep = "_"))
+
+source_pw <- read_tsv(params$source) %>% mutate(Source.Dist = 1- value) %>% select(-value)
+
 td <- tp1$height_list %>% append(tp2$height_list)
 assert("Only one threshold in processed typing data", ncol(td[[2]]) == 1)
 
-for (it in 1:10) {
-  print(paste0("Iteration ", it, ": "))
+for (it in 1:50) {
   td <- tp1$height_list %>% append(tp2$height_list)
   
-  incl_clusters <- datasetSizeBelow(td, 7000)
-
+  incl_clusters <- datasetSizeBelow(td, 5000)
+  
+  # print(incl_clusters)
   c2name <- colnames(td[[2]])
   td[[2]] <- td[[2]] %>% filter(!!as.symbol(c2name) %in% incl_clusters)
   td[[1]] <- td[[1]] %>% filter(rownames(td[[1]]) %in% rownames(td[[2]]))
 
-  strain_data <- read_tsv(params$strains) %>% 
-    mutate(Date     = as.Date(paste(Year, Month, Day, sep = "-")), 
-           Location = paste(Country, Province, City, sep = "_")) %>% 
-    filter(Strain %in% rownames(td[[2]]))
+  strain_data <- raw_strains %>% filter(Strain %in% rownames(td[[2]]))
 
-  case1a <- actualResults(params$source, strain_data, c1$sigma, tau, gamma, typing_datum = td[[2]]) %>% 
+  case1a <- actualResults(source_pw, strain_data, c1$sigma, tau, gamma, typing_datum = td[[2]]) %>% 
     as_tibble() %>% set_colnames(c("Th", "Th_Size", "Th_ECC")) %>% 
     mutate(Th_ECC = ifelse(is.na(Th_ECC), 1, Th_ECC))
   
   case1b <- testResults(strain_data, tau, gamma, typing_datum = td[[2]]) %>% 
     set_colnames(c("Th", "Th_Size", "Th_ECC")) %>% mutate(Th_ECC = ifelse(is.na(Th_ECC), 1, Th_ECC))
 
-  checkColumns(case1a, case1b, 1e-10, it)
+  checkColumns(case1a, case1b, 1e-14, it)
 }
 
 ```

@@ -1,7 +1,5 @@
 ### Incorporating the allele data with the epidemiological data 
-actualResults <- function(source_file, strain_data, sigma, tau, gamma, typing_datum) {
-  # strain_data, source_file, sigma, tau, gamma, cpus, typing_data
-  source_pw <- read_tsv(source_file) %>% mutate(Source.Dist = 1- value) %>% select(-value)
+actualResults <- function(source_pw, strain_data, sigma, tau, gamma, typing_datum) {
   
   # look into a method that runs the distances when given two separate vectors (then we can 
   # avoid the extra work that comes with overlapping)
