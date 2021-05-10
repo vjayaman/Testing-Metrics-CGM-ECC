@@ -32,9 +32,6 @@ actualResults <- function(source_pw, strain_data, sigma, tau, gamma, typing_datu
 # ---------------------------------------------------------------------------------------------------
 # Note: dr stands for data representative
 testResults <- function(strain_data, tau, gamma, typing_datum) {
-  
-  # library(beepr)
-  # strain_data, sigma, tau, gamma, cpus, typing_data
 
   # in example: strain_data has 35,627 rows (strains), assignments has 5,504 rows (> 6-fold smaller)
   assignments <- strain_data %>% select(Date, Latitude, Longitude, Location) %>% 
@@ -56,25 +53,23 @@ testResults <- function(strain_data, tau, gamma, typing_datum) {
   rownames(epi_matrix) <- colnames(epi_matrix)
 
   # create similarity values from epi distance matrix:
-  epi_melt_all <- melt(as.matrix(1-epi_matrix)) %>%
+  epi_melt <- melt(as.matrix(1-epi_matrix)) %>%
     mutate(across(c(Var1, Var2), as.character)) %>% as.data.table()
   
   # Identifying which strains match with which non-redundant data representatives
-  dr_matches <- strain_data %>% left_join(., assignments) %>% select(Strain, dr)
-  # From this part on we're testing for a single cluster - cluster 1 at TP1 (with 202 strains, but 122 drs)
+  dr_matches <- strain_data %>% 
+    left_join(., assignments, by = c("Latitude", "Longitude", "Date", "Location")) %>% 
+    select(Strain, dr)
   
-  # dr_td1 <- td[[1]] %>% rownames_to_column("Strain") %>% as_tibble() %>% 
   dr_td1 <- typing_datum %>% rownames_to_column("Strain") %>% as_tibble() %>% 
-    left_join(., dr_matches) %>% 
+    left_join(., dr_matches, by = "Strain") %>% 
     mutate(across(dr, as.character)) %>% select(-Strain)
   
   # Counting data representatives (so we know how much to multiply each ECC value by to represent all strains)
-  g_cuts <- dr_td1 %>% group_by(T0) %>% count(dr) %>% ungroup() %>% 
-    left_join(dr_td1, .) %>% unique() %>% mutate(across(dr, as.character))
-  # epi_melt <- epi_melt_all %>% filter(Var1 %in% g_cuts$dr, Var2 %in% g_cuts$dr)
-  epi_melt <- epi_melt_all
+  tallied_reps <- dr_td1 %>% group_by(T0) %>% count(dr) %>% ungroup()
+  g_cuts <- left_join(dr_td1, tallied_reps, by = intersect(colnames(tallied_reps), colnames(dr_td1))) %>% 
+    unique() %>% mutate(across(dr, as.character))
   
-  z2 <- epi_cohesion_new(g_cuts, epi_melt)
-  # beep(3)
-  return(z2)
+  ecc_results <- epi_cohesion_new(g_cuts, epi_melt)
+  return(ecc_results)
 }

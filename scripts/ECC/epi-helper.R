@@ -152,8 +152,6 @@ EpiTable <- function(datafile, source_matrix, source_coeff, temp_coeff, geog_coe
     strain_sims %>% 
     left_join(source_matrix, by = c("Source.1", "Source.2")) %>% 
     left_join(geog_temp, by = c("Strain.1", "Strain.2"))
-    # left_join(temp_matrix, by = c("Strain.1", "Strain.2")) %>% 
-    # left_join(geog_matrix, by = c("Strain.1", "Strain.2")) 
   
   # split into two steps, since it seems to seems to reduce memory usage  
   if (x == 0) {
