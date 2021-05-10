@@ -171,7 +171,7 @@ for (it in 1:50) {
   
   incl_clusters <- datasetSizeBelow(td, 1500)
   
-  # print(incl_clusters)
+  incl_clusters %>% sort() %>% print()
   c2name <- colnames(td[[2]])
   td[[2]] <- td[[2]] %>% filter(!!as.symbol(c2name) %in% incl_clusters)
   td[[1]] <- td[[1]] %>% filter(rownames(td[[1]]) %in% rownames(td[[2]]))
