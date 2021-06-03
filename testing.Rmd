@@ -166,7 +166,7 @@ td <- tp1$height_list %>% append(tp2$height_list)
 assert("Only one threshold in processed typing data", ncol(td[[2]]) == 1)
 tol <- 1e-14
 
-for (it in 1:50) {
+for (it in 1:80) {
   td <- tp1$height_list %>% append(tp2$height_list)
   
   incl_clusters <- datasetSizeBelow(td, 1500)
